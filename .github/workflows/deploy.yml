@@ -5,12 +5,24 @@
 name: Deploy Next.js site to Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["master"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'The version code of the build'
+        required: true
+      version_name:
+        description: 'The version name of the build'
+        required: true
+      environment:
+        type: choice
+        options:
+          - production
+          - development
+        description: 'The environment you want to build the app for'
+        required: true
+        default: 'production'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -23,6 +35,12 @@ permissions:
 concurrency:
   group: "pages"
   cancel-in-progress: false
+
+env:
+  LANG: UTF-8
+  LC_ALL: en_US.UTF-8
+  # USER INPUTS
+  INPUT_APP_ENVIRONMENT: ${{ github.event.inputs.environment }}
 
 jobs:
   # Build job
@@ -69,7 +87,12 @@ jobs:
           # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
-            
+
+      - name: Create .env file
+        run: |
+          echo "PROVIDER=$INPUT_APP_PROVIDER" >> .env
+          echo "ENV=$INPUT_APP_ENVIRONMENT" >> .env
+
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
         
